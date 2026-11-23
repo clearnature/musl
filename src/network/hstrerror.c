@@ -9,10 +9,9 @@ static const char msgs[] =
 	"Address not available\0"
 	"\0Unknown error";
 
-const char *hstrerror(int e)
+const char *hstrerror(int ecode)
 {
 	const char *s;
-	unsigned ecode=e;
 	for (s=msgs, ecode--; ecode && *s; ecode--, s++) for (; *s; s++);
 	if (!*s) s++;
 	return LCTRANS_CUR(s);

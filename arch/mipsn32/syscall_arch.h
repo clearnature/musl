@@ -1,9 +1,6 @@
 #define __SYSCALL_LL_E(x) (x)
 #define __SYSCALL_LL_O(x) (x)
 
-#define __scc(X) sizeof(1?(X):0ULL) < 8 ? (unsigned long) (X) : (long long) (X)
-typedef long long syscall_arg_t;
-
 #define SYSCALL_RLIM_INFINITY (-1UL/2)
 
 #if __mips_isa_rev >= 6
@@ -16,9 +13,9 @@ typedef long long syscall_arg_t;
 	"$14", "$15", "$24", "$25", "hi", "lo", "memory"
 #endif
 
-static inline long __syscall0(long long n)
+static inline long __syscall0(long n)
 {
-	register long long r7 __asm__("$7");
+	register long r7 __asm__("$7");
 	register long r2 __asm__("$2");
 	__asm__ __volatile__ (
 		"daddu $2,$0,%2 ; syscall"
@@ -28,10 +25,10 @@ static inline long __syscall0(long long n)
 	return r7 && r2>0 ? -r2 : r2;
 }
 
-static inline long __syscall1(long long n, long long a)
+static inline long __syscall1(long n, long a)
 {
-	register long long r4 __asm__("$4") = a;
-	register long long r7 __asm__("$7");
+	register long r4 __asm__("$4") = a;
+	register long r7 __asm__("$7");
 	register long r2 __asm__("$2");
 	__asm__ __volatile__ (
 		"daddu $2,$0,%2 ; syscall"
@@ -41,11 +38,11 @@ static inline long __syscall1(long long n, long long a)
 	return r7 && r2>0 ? -r2 : r2;
 }
 
-static inline long __syscall2(long long n, long long a, long long b)
+static inline long __syscall2(long n, long a, long b)
 {
-	register long long r4 __asm__("$4") = a;
-	register long long r5 __asm__("$5") = b;
-	register long long r7 __asm__("$7");
+	register long r4 __asm__("$4") = a;
+	register long r5 __asm__("$5") = b;
+	register long r7 __asm__("$7");
 	register long r2 __asm__("$2");
 
 	__asm__ __volatile__ (
@@ -56,12 +53,12 @@ static inline long __syscall2(long long n, long long a, long long b)
 	return r7 && r2>0 ? -r2 : r2;
 }
 
-static inline long __syscall3(long long n, long long a, long long b, long long c)
+static inline long __syscall3(long n, long a, long b, long c)
 {
-	register long long r4 __asm__("$4") = a;
-	register long long r5 __asm__("$5") = b;
-	register long long r6 __asm__("$6") = c;
-	register long long r7 __asm__("$7");
+	register long r4 __asm__("$4") = a;
+	register long r5 __asm__("$5") = b;
+	register long r6 __asm__("$6") = c;
+	register long r7 __asm__("$7");
 	register long r2 __asm__("$2");
 
 	__asm__ __volatile__ (
@@ -72,12 +69,12 @@ static inline long __syscall3(long long n, long long a, long long b, long long c
 	return r7 && r2>0 ? -r2 : r2;
 }
 
-static inline long __syscall4(long long n, long long a, long long b, long long c, long long d)
+static inline long __syscall4(long n, long a, long b, long c, long d)
 {
-	register long long r4 __asm__("$4") = a;
-	register long long r5 __asm__("$5") = b;
-	register long long r6 __asm__("$6") = c;
-	register long long r7 __asm__("$7") = d;
+	register long r4 __asm__("$4") = a;
+	register long r5 __asm__("$5") = b;
+	register long r6 __asm__("$6") = c;
+	register long r7 __asm__("$7") = d;
 	register long r2 __asm__("$2");
 
 	__asm__ __volatile__ (
@@ -88,13 +85,13 @@ static inline long __syscall4(long long n, long long a, long long b, long long c
 	return r7 && r2>0 ? -r2 : r2;
 }
 
-static inline long __syscall5(long long n, long long a, long long b, long long c, long long d, long long e)
+static inline long __syscall5(long n, long a, long b, long c, long d, long e)
 {
-	register long long r4 __asm__("$4") = a;
-	register long long r5 __asm__("$5") = b;
-	register long long r6 __asm__("$6") = c;
-	register long long r7 __asm__("$7") = d;
-	register long long r8 __asm__("$8") = e;
+	register long r4 __asm__("$4") = a;
+	register long r5 __asm__("$5") = b;
+	register long r6 __asm__("$6") = c;
+	register long r7 __asm__("$7") = d;
+	register long r8 __asm__("$8") = e;
 	register long r2 __asm__("$2");
 
 	__asm__ __volatile__ (
@@ -105,14 +102,14 @@ static inline long __syscall5(long long n, long long a, long long b, long long c
 	return r7 && r2>0 ? -r2 : r2;
 }
 
-static inline long __syscall6(long long n, long long a, long long b, long long c, long long d, long long e, long long f)
+static inline long __syscall6(long n, long a, long b, long c, long d, long e, long f)
 {
-	register long long r4 __asm__("$4") = a;
-	register long long r5 __asm__("$5") = b;
-	register long long r6 __asm__("$6") = c;
-	register long long r7 __asm__("$7") = d;
-	register long long r8 __asm__("$8") = e;
-	register long long r9 __asm__("$9") = f;
+	register long r4 __asm__("$4") = a;
+	register long r5 __asm__("$5") = b;
+	register long r6 __asm__("$6") = c;
+	register long r7 __asm__("$7") = d;
+	register long r8 __asm__("$8") = e;
+	register long r9 __asm__("$9") = f;
 	register long r2 __asm__("$2");
 
 	__asm__ __volatile__ (

@@ -16,9 +16,8 @@ __clone:
 
 # store non-volatile regs r30, r31 on stack in order to put our
 # start func and its arg there
-stwu 1, -16(1)
-stw 30, 8(1)
-stw 31, 12(1)
+stwu 30, -16(1)
+stw 31, 4(1)
 
 # save r3 (func) into r30, and r6(arg) into r31
 mr 30, 3
@@ -66,8 +65,8 @@ sc
 2:
 
 # restore stack
-lwz 30, 8(1)
-lwz 31, 12(1)
+lwz 30, 0(1)
+lwz 31, 4(1)
 addi 1, 1, 16
 
 blr

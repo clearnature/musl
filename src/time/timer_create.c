@@ -1,7 +1,6 @@
 #include <time.h>
 #include <setjmp.h>
 #include <limits.h>
-#include <semaphore.h>
 #include "pthread_impl.h"
 #include "atomic.h"
 
@@ -13,7 +12,7 @@ struct ksigevent {
 };
 
 struct start_args {
-	sem_t sem1, sem2;
+	pthread_barrier_t b;
 	struct sigevent *sev;
 };
 
@@ -22,16 +21,10 @@ static void dummy_0()
 }
 weak_alias(dummy_0, __pthread_tsd_run_dtors);
 
-static void timer_handler(int sig, siginfo_t *si, void *ctx)
-{
-}
-
 static void cleanup_fromsig(void *p)
 {
 	pthread_t self = __pthread_self();
 	__pthread_tsd_run_dtors();
-	__block_app_sigs(0);
-	__syscall(SYS_rt_sigprocmask, SIG_BLOCK, SIGTIMER_SET, 0, _NSIG/8);
 	self->cancel = 0;
 	self->cancelbuf = 0;
 	self->canceldisable = 0;
@@ -48,24 +41,9 @@ static void *start(void *arg)
 
 	void (*notify)(union sigval) = args->sev->sigev_notify_function;
 	union sigval val = args->sev->sigev_value;
-	int cancel = 0;
 
-	/* Waiting on sem1 ensures we see self->timer_id. */
-	while (sem_wait(&args->sem1));
-
-	/* If self->timer_id is -1 while the parent thread is still in
-	 * timer_create (before the sem_post to sem2) then the timer was
-	 * never created.  If it is -1 later after the sem_post then
-	 * it was cancelled via timer_delete. */
-	if (self->timer_id < 0)
-		cancel = 1;
-
-	/* Incrementing sem2 informs the parent that we are done checking
-	 * the initial value of self->timer_id, and accessing the arguments
-	 * so that the parent can proceed past their block lifetime. */
-	sem_post(&args->sem2);
-
-	if (cancel)
+	pthread_barrier_wait(&args->b);
+	if (self->cancel)
 		return 0;
 	for (;;) {
 		siginfo_t si;
@@ -91,7 +69,6 @@ int timer_create(clockid_t clk, struct sigevent *restrict evp, timer_t *restrict
 	struct ksigevent ksev, *ksevp=0;
 	int timerid;
 	sigset_t set;
-	int cs;
 
 	switch (evp ? evp->sigev_notify : SIGEV_SIGNAL) {
 	case SIGEV_NONE:
@@ -113,10 +90,7 @@ int timer_create(clockid_t clk, struct sigevent *restrict evp, timer_t *restrict
 		break;
 	case SIGEV_THREAD:
 		if (!init) {
-			struct sigaction sa = {
-				.sa_sigaction = timer_handler,
-				.sa_flags = SA_SIGINFO | SA_RESTART
-			};
+			struct sigaction sa = { .sa_handler = SIG_DFL };
 			__libc_sigaction(SIGTIMER, &sa, 0);
 			a_store(&init, 1);
 		}
@@ -125,8 +99,7 @@ int timer_create(clockid_t clk, struct sigevent *restrict evp, timer_t *restrict
 		else
 			pthread_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-		sem_init(&args.sem1, 0, 0);
-		sem_init(&args.sem2, 0, 0);
+		pthread_barrier_init(&args.b, 0, 2);
 		args.sev = evp;
 
 		__block_app_sigs(&set);
@@ -142,22 +115,13 @@ int timer_create(clockid_t clk, struct sigevent *restrict evp, timer_t *restrict
 		ksev.sigev_signo = SIGTIMER;
 		ksev.sigev_notify = SIGEV_THREAD_ID;
 		ksev.sigev_tid = td->tid;
-		r = __syscall(SYS_timer_create, clk, &ksev, &timerid);
-		if (r < 0) {
+		if (syscall(SYS_timer_create, clk, &ksev, &timerid) < 0) {
 			timerid = -1;
+			td->cancel = 1;
 		}
 		td->timer_id = timerid;
-
-		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &cs);
-		sem_post(&args.sem1);
-		while (sem_wait(&args.sem2));
-		pthread_setcancelstate(cs, 0);
-
-		if (timerid < 0) {
-			errno = -r;
-			return -1;
-		}
-
+		pthread_barrier_wait(&args.b);
+		if (timerid < 0) return -1;
 		*res = (void *)(INTPTR_MIN | (uintptr_t)td>>1);
 		break;
 	default:

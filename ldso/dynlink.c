@@ -21,16 +21,14 @@
 #include <sys/membarrier.h>
 #include "pthread_impl.h"
 #include "fork_impl.h"
-#include "libc.h"
 #include "dynlink.h"
 
 static size_t ldso_page_size;
-/* libc.h may have defined a macro for dynamic PAGE_SIZE already, but
- * PAGESIZE is only defined if it's constant for the arch. */
-#ifndef PAGESIZE
-#undef PAGE_SIZE
+#ifndef PAGE_SIZE
 #define PAGE_SIZE ldso_page_size
 #endif
+
+#include "libc.h"
 
 #define malloc __libc_malloc
 #define calloc __libc_calloc
@@ -40,10 +38,6 @@ static size_t ldso_page_size;
 static void error_impl(const char *, ...);
 static void error_noop(const char *, ...);
 static void (*error)(const char *, ...) = error_noop;
-
-static void set_errno_impl(int);
-static void set_errno_noop(int);
-static void (*set_errno)(int) = set_errno_noop;
 
 #define MAXP2(a,b) (-(-(a)&-(b)))
 #define ALIGN(x,y) ((x)+(y)-1 & -(y))
@@ -366,14 +360,19 @@ static struct symdef get_lfs64(const char *name)
 		"pwritev\0readdir\0scandir\0sendfile\0setrlimit\0"
 		"stat\0statfs\0statvfs\0tmpfile\0truncate\0versionsort\0"
 		"__fxstat\0__fxstatat\0__lxstat\0__xstat\0";
+	size_t l;
+	char buf[16];
+	for (l=0; name[l]; l++) {
+		if (l >= sizeof buf) goto nomatch;
+		buf[l] = name[l];
+	}
 	if (!strcmp(name, "readdir64_r"))
 		return find_sym(&ldso, "readdir_r", 1);
-	size_t l = strnlen(name, 18);
-	if (l<2 || name[l-2]!='6' || name[l-1]!='4' || name[l])
+	if (l<2 || name[l-2]!='6' || name[l-1]!='4')
 		goto nomatch;
+	buf[l-=2] = 0;
 	for (p=lfs64_list; *p; p++) {
-		if (!strncmp(name, p, l-2) && !p[l-2])
-			return find_sym(&ldso, p, 1);
+		if (!strcmp(buf, p)) return find_sym(&ldso, buf, 1);
 		while (*p) p++;
 	}
 nomatch:
@@ -620,7 +619,6 @@ static void reclaim_gaps(struct dso *dso)
 	for (; phcnt--; ph=(void *)((char *)ph+dso->phentsize)) {
 		if (ph->p_type!=PT_LOAD) continue;
 		if ((ph->p_flags&(PF_R|PF_W))!=(PF_R|PF_W)) continue;
-		if (ph->p_memsz == 0) continue;
 		reclaim(dso, ph->p_vaddr & -PAGE_SIZE, ph->p_vaddr);
 		reclaim(dso, ph->p_vaddr+ph->p_memsz,
 			ph->p_vaddr+ph->p_memsz+PAGE_SIZE-1 & -PAGE_SIZE);
@@ -1428,7 +1426,6 @@ static void reloc_all(struct dso *p)
 			long ret = __syscall(SYS_mprotect, laddr(p, p->relro_start),
 				p->relro_end-p->relro_start, PROT_READ);
 			if (ret != 0 && ret != -ENOSYS) {
-				set_errno(-ret);
 				error("Error relocating %s: RELRO protection failed: %m",
 					p->name);
 				if (runtime) longjmp(*rtld_fail, 1);
@@ -1830,7 +1827,6 @@ void __dls3(size_t *sp, size_t *auxv)
 
 	/* Activate error handler function */
 	error = error_impl;
-	set_errno = set_errno_impl;
 
 	/* If the main program was already loaded by the kernel,
 	 * AT_PHDR will point to some location other than the dynamic
@@ -2441,14 +2437,5 @@ static void error_impl(const char *fmt, ...)
 }
 
 static void error_noop(const char *fmt, ...)
-{
-}
-
-static void set_errno_impl(int e)
-{
-	errno = e;
-}
-
-static void set_errno_noop(int e)
 {
 }

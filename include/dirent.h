@@ -9,21 +9,13 @@ extern "C" {
 
 #define __NEED_ino_t
 #define __NEED_off_t
-#define __NEED_reclen_t
+#if defined(_BSD_SOURCE) || defined(_GNU_SOURCE)
 #define __NEED_size_t
-#define __NEED_ssize_t
+#endif
 
 #include <bits/alltypes.h>
 
 #include <bits/dirent.h>
-
-struct posix_dent {
-	ino_t d_ino;
-	off_t d_off;
-	reclen_t d_reclen;
-	unsigned char d_type;
-	char d_name[];
-};
 
 typedef struct __dirstream DIR;
 
@@ -37,8 +29,6 @@ int            readdir_r(DIR *__restrict, struct dirent *__restrict, struct dire
 void           rewinddir(DIR *);
 int            dirfd(DIR *);
 
-ssize_t posix_getdents(int, void *, size_t, int);
-
 int alphasort(const struct dirent **, const struct dirent **);
 int scandir(const char *, struct dirent ***, int (*)(const struct dirent *), int (*)(const struct dirent **, const struct dirent **));
 
@@ -47,6 +37,7 @@ void           seekdir(DIR *, long);
 long           telldir(DIR *);
 #endif
 
+#if defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
 #define DT_UNKNOWN 0
 #define DT_FIFO 1
 #define DT_CHR 2
@@ -56,8 +47,6 @@ long           telldir(DIR *);
 #define DT_LNK 10
 #define DT_SOCK 12
 #define DT_WHT 14
-
-#if defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
 #define IFTODT(x) ((x)>>12 & 017)
 #define DTTOIF(x) ((x)<<12)
 int getdents(int, struct dirent *, size_t);

@@ -124,7 +124,7 @@ static int match_bracket(const char *p, int k, int kfold)
 	for (; *p != ']'; p++) {
 		if (p[0]=='-' && p[1]!=']') {
 			wchar_t wc2;
-			int l = mbtowc(&wc2, ++p, 4);
+			int l = mbtowc(&wc2, p+1, 4);
 			if (l < 0) return 0;
 			if (wc <= wc2)
 				if ((unsigned)k-wc <= wc2-wc ||
@@ -155,8 +155,7 @@ static int match_bracket(const char *p, int k, int kfold)
 			if (l < 0) return 0;
 			p += l-1;
 		}
-		if ((wc==k || wc==kfold) && (p[1]!='-' || p[2]==']'))
-			return !inv;
+		if (wc==k || wc==kfold) return !inv;
 	}
 	return inv;
 }
@@ -169,7 +168,7 @@ static int fnmatch_internal(const char *pat, size_t m, const char *str, size_t n
 	int c, k, kfold;
 
 	if (flags & FNM_PERIOD) {
-		if (*str == '.' && *pat != '.' && *pat != '\\')
+		if (*str == '.' && *pat != '.')
 			return FNM_NOMATCH;
 	}
 	for (;;) {
@@ -183,7 +182,7 @@ static int fnmatch_internal(const char *pat, size_t m, const char *str, size_t n
 		default:
 			k = str_next(str, n, &sinc);
 			if (k <= 0)
-				return (c==END && !k) ? 0 : FNM_NOMATCH;
+				return (c==END) ? 0 : FNM_NOMATCH;
 			str += sinc;
 			n -= sinc;
 			kfold = flags & FNM_CASEFOLD ? casefold(k) : k;
@@ -243,7 +242,7 @@ static int fnmatch_internal(const char *pat, size_t m, const char *str, size_t n
 		c = pat_next(p, endpat-p, &pinc, flags);
 		p += pinc;
 		if ((k = str_next(s, endstr-s, &sinc)) <= 0) {
-			if (c != END || k < 0) return FNM_NOMATCH;
+			if (c != END) return FNM_NOMATCH;
 			break;
 		}
 		s += sinc;

@@ -1,3 +1,6 @@
+#undef __WORDSIZE
+#define __WORDSIZE 64
+
 typedef union {
 	double d;
 	float f;

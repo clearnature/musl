@@ -245,12 +245,9 @@ int vfwscanf(FILE *restrict f, const wchar_t *restrict fmt, va_list ap)
 			if (alloc) {
 				k = t=='c' ? width+1U : 31;
 				if (size == SIZE_l) {
-					if (k > -1/sizeof(wchar_t))
-						k = -1/sizeof(wchar_t);
 					wcs = malloc(k*sizeof(wchar_t));
 					if (!wcs) goto alloc_fail;
 				} else {
-					if (k < MB_LEN_MAX) k = MB_LEN_MAX;
 					s = malloc(k);
 					if (!s) goto alloc_fail;
 				}
@@ -271,7 +268,7 @@ int vfwscanf(FILE *restrict f, const wchar_t *restrict fmt, va_list ap)
 					int l = wctomb(s?s+i:tmp, c);
 					if (l<0) goto input_fail;
 					i += l;
-					if (alloc && i > k-MB_LEN_MAX) {
+					if (alloc && i > k-4) {
 						k += k+1;
 						char *tmp = realloc(s, k);
 						if (!tmp) goto alloc_fail;

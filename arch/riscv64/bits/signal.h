@@ -19,7 +19,7 @@ struct __riscv_mc_d_ext_state {
 };
 
 struct __riscv_mc_q_ext_state {
-	unsigned long long __f[64] __attribute__((__aligned__(16)));
+	unsigned long long __f[64] __attribute__((aligned(16)));
 	unsigned int __fcsr;
 	unsigned int __reserved[3];
 };
@@ -68,7 +68,6 @@ typedef struct __ucontext
 	struct __ucontext *uc_link;
 	stack_t uc_stack;
 	sigset_t uc_sigmask;
-	char __pad[8];
 	mcontext_t uc_mcontext;
 } ucontext_t;
 

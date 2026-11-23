@@ -25,10 +25,8 @@ char *getusershell(void)
 	ssize_t l;
 	if (!f) setusershell();
 	if (!f) return 0;
-	do {
-		l = getline(&line, &linesize, f);
-		if (l <= 0) return 0;
-	} while (line[0] == '#' || line[0] == '\n');
+	l = getline(&line, &linesize, f);
+	if (l <= 0) return 0;
 	if (line[l-1]=='\n') line[l-1]=0;
 	return line;
 }

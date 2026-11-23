@@ -36,10 +36,8 @@
 #define brk(p) ((uintptr_t)__syscall(SYS_brk, p))
 
 #define mmap __mmap
-#define munmap __munmap
 #define madvise __madvise
 #define mremap __mremap
-#define mprotect __mprotect
 
 #define DISABLE_ALIGNED_ALLOC (__malloc_replaced && !__aligned_alloc_replaced)
 
@@ -64,8 +62,8 @@ __attribute__((__visibility__("hidden")))
 extern int __malloc_lock[1];
 
 #define LOCK_OBJ_DEF \
-void __malloc_atfork(int who) { malloc_atfork(who); } \
-int __malloc_lock[1]
+int __malloc_lock[1]; \
+void __malloc_atfork(int who) { malloc_atfork(who); }
 
 static inline void rdlock()
 {
